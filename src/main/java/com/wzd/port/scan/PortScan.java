@@ -2,8 +2,11 @@ package com.wzd.port.scan;
 
 import com.wzd.port.model.ResponseVO;
 import com.wzd.port.model.Result;
+import com.wzd.port.thread.ScanPointPort;
 import com.wzd.port.thread.ScanSeriesPort;
+import com.wzd.port.utils.NetWorkUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -20,31 +23,21 @@ public class PortScan {
 
 
     /**
-     * 多线程扫描目标主机一个段的端口开放情况
-     *
+     * 多线程扫描端口段
      * @param ip
-     *            待扫描IP或域名,eg:180.97.161.184 www.zifangsky.cn
      * @param startPort
-     *            起始端口
      * @param endPort
-     *            结束端口
      * @param timeout
-     *            连接超时时间
-     * */
+     * @return
+     */
     public ResponseVO scanSeriesPorts(String ip, int startPort, int endPort, int timeout) {
-        boolean flag = false;
-        try {
-            flag = InetAddress.getByName(ip).isReachable(timeout);
-        } catch (IOException e) {
-            log.error(e.getMessage());
-            flag = false;
-        }
+        boolean flag = NetWorkUtils.isPing(ip,timeout);
         if(!flag){
             return ResponseVO.errorInstance("该"+ip+"地址不可用");
         }
-
-        if(startPort < 0 || endPort > 65535){
-            return ResponseVO.errorInstance("端口不能小于0或者大于65535");
+        String msg = NetWorkUtils.checkPort(startPort,endPort);
+        if(!StringUtils.isEmpty(msg)){
+            return ResponseVO.errorInstance(msg);
         }
 
         List<Future<Result>> resultList = new ArrayList<Future<Result>>();
@@ -84,29 +77,31 @@ public class PortScan {
         }
     }
 
+    /**
+     * 扫描指定端口
+     * @param ip
+     * @param ports
+     * @param timeout
+     * @return
+     */
     public ResponseVO scanPointPorts(String ip, Set<Integer> ports, int timeout) {
-        boolean flag = false;
-        try {
-            flag = InetAddress.getByName(ip).isReachable(timeout);
-        } catch (IOException e) {
-            log.error(e.getMessage());
-            flag = false;
-        }
+        boolean flag = NetWorkUtils.isPing(ip,timeout);
         if(!flag){
             return ResponseVO.errorInstance("该"+ip+"地址不可用");
         }
 
-        if(startPort < 0 || endPort > 65535){
-            return ResponseVO.errorInstance("端口不能小于0或者大于65535");
+        if(ports == null || ports.isEmpty()){
+            ResponseVO.errorInstance("该"+ip+"端口为空");
         }
 
         List<Future<Result>> resultList = new ArrayList<Future<Result>>();
 
         //线程数
-        int threadNumber = endPort - startPort;
+        int threadNumber = (ports.size())/2 ==0 ? 1:(ports.size())/2;
+
         ExecutorService threadPool = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNumber; i++) {
-            ScanSeriesPort scanSeriesPort = new ScanSeriesPort(ip, startPort, endPort,
+            ScanPointPort scanSeriesPort = new ScanPointPort(ip, ports,
                     threadNumber, i, timeout);
             Future<Result> res = threadPool.submit(scanSeriesPort);
             //不能直接取结果，会导致线程阻塞

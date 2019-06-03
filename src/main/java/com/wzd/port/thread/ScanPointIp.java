@@ -1,8 +1,11 @@
 package com.wzd.port.thread;
 
+import com.wzd.port.constant.TypeEnum;
 import com.wzd.port.model.ResponseVO;
 import com.wzd.port.scan.PortScan;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Set;
 
 /**
  * 扫描指定ip
@@ -10,30 +13,62 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScanPointIp implements Runnable {
 
+
     /**
-     * ip前缀：192.169.1.
+     * 指定ip的集合
      */
-    private String startIpPreixAddr;
+    private Set<String> ipSet;
 
-    // 起始和结束端口，线程数，这是第几个线程，超时时间
-    private int startIpNum, endIpNum, threadNumber, currentThreadNum, timeout;
+    /**
+     * 指定端口的集合
+     */
+    private Set<Integer> portSet;
+    /**
+     * 起始和终止的端口段
+     */
+    private int[] startEndPort;
 
-    public ScanPointIp(String startIpPreixAddr, int startIpNum, int endIpNum, int threadNumber, int currentThreadNum) {
-        this.startIpPreixAddr = startIpPreixAddr;
-        this.startIpNum = startIpNum;
-        this.endIpNum = endIpNum;
+    /**
+     * 类型
+     */
+    private String type;
+
+    // 线程数，这是第几个线程，超时时间
+    private int threadNumber, currentThreadNum, timeout;
+
+    public ScanPointIp(Set<String> ipSet,int[] startEndPort, int threadNumber, int currentThreadNum, int timeout) {
+        this.ipSet = ipSet;
+        this.startEndPort = startEndPort;
+        this.type = TypeEnum.POINT.getType();
         this.threadNumber = threadNumber;
         this.currentThreadNum = currentThreadNum;
+        this.timeout = timeout;
+    }
+
+    public ScanPointIp(Set<String> ipSet,Set<Integer> portSet, int threadNumber, int currentThreadNum, int timeout) {
+        this.ipSet = ipSet;
+        this.portSet = portSet;
+        this.type = TypeEnum.SERIES.getType();
+        this.threadNumber = threadNumber;
+        this.currentThreadNum = currentThreadNum;
+        this.timeout = timeout;
     }
 
     @Override
     public void run() {
         int ip = 0;
-        for (ip = startIpNum + currentThreadNum; ip <= endIpNum; ip += threadNumber) {
-            String ipAddr = this.startIpPreixAddr+ip;
+        String[] ips = ipSet.toArray(new String[ipSet.size()]); // Set转数组
+        for (ip = 0 + currentThreadNum; ip <= ips.length - 1; ip += threadNumber) {
+            String ipAddr = ips[ip];
             PortScan portScan = new PortScan();
-            ResponseVO vo = portScan.scanSeriesPorts(ipAddr, 20, 30, 800);
-            log.info("获取结果："+vo.toString());
+            if(type.equals(TypeEnum.POINT.getType())){
+                ResponseVO vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0],  startEndPort[1], timeout);
+                log.info("获取结果："+vo.toString());
+            }else{
+                ResponseVO vo = portScan.scanPointPorts(ipAddr,portSet,timeout);
+                log.info("获取结果："+vo.toString());
+            }
+
         }
     }
 }

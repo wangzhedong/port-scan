@@ -17,7 +17,7 @@ public class PortModel {
      * 端口段：0--65535
      * 指定端口：[0,1,2,3]
      */
-    private List<String> ports;
+    private List<Integer> ports;
 
     /**
      * ip类型
