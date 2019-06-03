@@ -1,0 +1,9 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /port
+spring:
+  profiles:
+    active: dev
+logging:
+  config: classpath:logback-spring.xml
