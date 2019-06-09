@@ -7,17 +7,14 @@ import com.wzd.port.model.SeriesIP;
 import com.wzd.port.service.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("port")
+@RequestMapping("scan")
 public class PortController {
 
     private final int timeout = 800;
@@ -25,7 +22,12 @@ public class PortController {
     @Autowired
     private ScanService scanService;
 
-    @PostMapping("scan")
+    @GetMapping("test")
+    public String test(){
+        return "哈哈哈";
+    }
+
+    @PostMapping("start")
     public ResponseVO scan(@RequestBody PortModel port){
         if(port == null ){
             return ResponseVO.errorInstance("数据不能为空！");
@@ -47,7 +49,7 @@ public class PortController {
             return ResponseVO.errorInstance("端口类型不能为空！");
         }
 
-        if(ipType.equals(TypeEnum.SERIES) && portType.equals(TypeEnum.SERIES)){
+        if(ipType.equals(TypeEnum.SERIES.getType()) && portType.equals(TypeEnum.SERIES.getType())){
             //ip段+端口段
             if(ips.size() != 2){
                 return ResponseVO.errorInstance("ip段格式不对");
@@ -57,8 +59,8 @@ public class PortController {
             }
             SeriesIP seriesIP = handleSeriesIP(ips.get(0),ips.get(1));
             int[] startEndPort = {ports.get(0),ports.get(1)};
-            scanService.scanSeriesIpPorts(seriesIP.getPrefixIp(),seriesIP.getStartEndIpNum(),startEndPort,timeout);
-        }else if(ipType.equals(TypeEnum.SERIES) && portType.equals(TypeEnum.POINT)){
+            return scanService.scanSeriesIpPorts(seriesIP.getPrefixIp(),seriesIP.getStartEndIpNum(),startEndPort,timeout);
+        }else if(ipType.equals(TypeEnum.SERIES.getType()) && portType.equals(TypeEnum.POINT.getType())){
             //ip段+指定端口
             if(ips.size() != 2){
                 return ResponseVO.errorInstance("ip段格式不对");
@@ -66,24 +68,24 @@ public class PortController {
             SeriesIP seriesIP = handleSeriesIP(ips.get(0),ips.get(1));
             Set<Integer> portSet = new HashSet<>();
             ports.forEach(item -> portSet.add(item));
-            scanService.scanSeriesIpAndPointPorts(seriesIP.getPrefixIp(),seriesIP.getStartEndIpNum(), portSet,  timeout);
-        }else if(ipType.equals(TypeEnum.POINT) && portType.equals(TypeEnum.SERIES)){
+            return scanService.scanSeriesIpAndPointPorts(seriesIP.getPrefixIp(),seriesIP.getStartEndIpNum(), portSet,  timeout);
+        }else if(ipType.equals(TypeEnum.POINT.getType()) && portType.equals(TypeEnum.SERIES.getType())){
             //指定ip+端口段
             Set<String> ipSet = new HashSet<>();
             int[] startEndPort = {ports.get(0),ports.get(1)};
             ips.forEach(item -> ipSet.add(item));
-            scanService.scanPointIpAndSeriesPorts(ipSet,startEndPort, timeout);
+            return scanService.scanPointIpAndSeriesPorts(ipSet,startEndPort, timeout);
 
-        }else if(ipType.equals(TypeEnum.POINT) && portType.equals(TypeEnum.POINT)){
+        }else if(ipType.equals(TypeEnum.POINT.getType()) && portType.equals(TypeEnum.POINT.getType())){
             //指定ip+指定端口
             Set<String> ipSet = new HashSet<>();
             Set<Integer> portSet = new HashSet<>();
             ips.forEach(item -> ipSet.add(item));
             ports.forEach(item -> portSet.add(item));
-            scanService.scanPointIpPorts( ipSet, portSet,timeout);
+            return scanService.scanPointIpPorts( ipSet, portSet,timeout);
+        }else{
+            return ResponseVO.errorInstance("无ip或者端口类型匹配");
         }
-
-        return ResponseVO.successInstance();
     }
 
     /**
@@ -93,7 +95,7 @@ public class PortController {
      * @return
      */
     private SeriesIP handleSeriesIP(String startIP,String endIP){
-        String prefixIp = startIP.substring(0,startIP.lastIndexOf("."));
+        String prefixIp = startIP.substring(0,startIP.lastIndexOf(".")+1);
         int startIPNum = Integer.valueOf(startIP.substring(startIP.lastIndexOf(".")+1,startIP.length()));
         int endIPNum = Integer.valueOf(endIP.substring(endIP.lastIndexOf(".")+1,endIP.length()));
         int[] startEndIpNum = {startIPNum,endIPNum};
@@ -102,8 +104,8 @@ public class PortController {
 
 
 
-    public static void main(String[] args){
+    /*public static void main(String[] args){
 
-    }
+    }*/
 
 }

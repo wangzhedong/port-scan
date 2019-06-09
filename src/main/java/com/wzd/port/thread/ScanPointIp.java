@@ -2,16 +2,18 @@ package com.wzd.port.thread;
 
 import com.wzd.port.constant.TypeEnum;
 import com.wzd.port.model.ResponseVO;
+import com.wzd.port.model.Result;
 import com.wzd.port.scan.PortScan;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 /**
  * 扫描指定ip
  */
 @Slf4j
-public class ScanPointIp implements Runnable {
+public class ScanPointIp implements Callable<ResponseVO> {
 
 
     /**
@@ -55,20 +57,21 @@ public class ScanPointIp implements Runnable {
     }
 
     @Override
-    public void run() {
+    public ResponseVO call() throws Exception {
         int ip = 0;
+        ResponseVO vo = null;
         String[] ips = ipSet.toArray(new String[ipSet.size()]); // Set转数组
         for (ip = 0 + currentThreadNum; ip <= ips.length - 1; ip += threadNumber) {
             String ipAddr = ips[ip];
             PortScan portScan = new PortScan();
             if(type.equals(TypeEnum.POINT.getType())){
-                ResponseVO vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0],  startEndPort[1], timeout);
+                vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0],  startEndPort[1], timeout);
                 log.info("获取结果："+vo.toString());
             }else{
-                ResponseVO vo = portScan.scanPointPorts(ipAddr,portSet,timeout);
+                vo = portScan.scanPointPorts(ipAddr,portSet,timeout);
                 log.info("获取结果："+vo.toString());
             }
-
         }
+        return vo;
     }
 }

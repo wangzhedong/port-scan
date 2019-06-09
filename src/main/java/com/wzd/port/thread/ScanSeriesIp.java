@@ -6,12 +6,13 @@ import com.wzd.port.scan.PortScan;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 /**
  * 扫描连续ip
  */
 @Slf4j
-public class ScanSeriesIp implements Runnable {
+public class ScanSeriesIp implements Callable<ResponseVO> {
 
     /**
      * ip前缀：192.169.1.
@@ -61,20 +62,21 @@ public class ScanSeriesIp implements Runnable {
     }
 
     @Override
-    public void run() {
+    public ResponseVO call() throws Exception {
         int ip = 0;
+        ResponseVO vo = null;
         for (ip = startEndIpNum[0] + currentThreadNum; ip <= startEndIpNum[1]; ip += threadNumber) {
             String ipAddr = this.startIpPreixAddr+ip;
             //如果是端口段，就端口段扫描，否则扫描指定端口
             PortScan portScan = new PortScan();
             if(type.equals(TypeEnum.SERIES.getType())){
-                ResponseVO vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0], startEndPort[1], this.timeout);
+                vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0], startEndPort[1], this.timeout);
                 log.info("获取结果："+vo.toString());
             }else{
-                portScan.scanPointPorts(ipAddr,this.portSet,this.timeout);
+                vo = portScan.scanPointPorts(ipAddr,this.portSet,this.timeout);
+                log.info("获取结果："+vo.toString());
             }
-
-
         }
+        return vo;
     }
 }

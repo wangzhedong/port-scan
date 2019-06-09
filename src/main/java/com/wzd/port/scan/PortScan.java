@@ -33,6 +33,7 @@ public class PortScan {
     public ResponseVO scanSeriesPorts(String ip, int startPort, int endPort, int timeout) {
         boolean flag = NetWorkUtils.isPing(ip,timeout);
         if(!flag){
+            log.info("该"+ip+"地址不可用");
             return ResponseVO.errorInstance("该"+ip+"地址不可用");
         }
         String msg = NetWorkUtils.checkPort(startPort,endPort);
@@ -43,7 +44,7 @@ public class PortScan {
         List<Future<Result>> resultList = new ArrayList<Future<Result>>();
 
         //线程数
-        int threadNumber = endPort - startPort;
+        int threadNumber = (endPort - startPort)/2;
         ExecutorService threadPool = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNumber; i++) {
             ScanSeriesPort scanSeriesPort = new ScanSeriesPort(ip, startPort, endPort,
@@ -101,9 +102,9 @@ public class PortScan {
 
         ExecutorService threadPool = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNumber; i++) {
-            ScanPointPort scanSeriesPort = new ScanPointPort(ip, ports,
+            ScanPointPort scanPointPort = new ScanPointPort(ip, ports,
                     threadNumber, i, timeout);
-            Future<Result> res = threadPool.submit(scanSeriesPort);
+            Future<Result> res = threadPool.submit(scanPointPort);
             //不能直接取结果，会导致线程阻塞
             resultList.add(res);
         }
@@ -111,7 +112,7 @@ public class PortScan {
         // 每秒中查看一次是否已经扫描结束
         while (true) {
             if (threadPool.isTerminated()) {
-                log.info(ip+"的所有端口扫描结束");
+                log.info(ip+"指定的所有端口扫描结束");
                 List<Result> results = new ArrayList<>();
                 for( Future<Result> fr:resultList){
                     try {
@@ -122,6 +123,7 @@ public class PortScan {
                         e.printStackTrace();
                     }
                 }
+                log.info("端口结束结果："+ResponseVO.successInstance(results).toString());
                 return ResponseVO.successInstance(results);
             }
             try {

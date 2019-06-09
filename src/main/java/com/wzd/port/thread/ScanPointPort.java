@@ -1,6 +1,7 @@
 package com.wzd.port.thread;
 
 import com.wzd.port.model.Result;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.*;
@@ -10,6 +11,7 @@ import java.util.concurrent.Callable;
 /**
  * 扫描指定端口
  */
+@Slf4j
 public class ScanPointPort implements Callable<Result> {
 
     private String ip; // 目标IP
@@ -29,6 +31,7 @@ public class ScanPointPort implements Callable<Result> {
     @Override
     public Result call() throws Exception {
         int port = 0;
+        Result result = null;
         Integer[] ports = portSet.toArray(new Integer[portSet.size()]); // Set转数组
         try {
             InetAddress address = InetAddress.getByName(ip);
@@ -37,24 +40,24 @@ public class ScanPointPort implements Callable<Result> {
             if (ports.length < 1)
                 return null;
             for (port = 0 + serial; port <= ports.length - 1; port += threadNumber) {
+                Thread th = Thread.currentThread();
+                log.info("ip:" + ip + " 端口 " + ports[port] + " 线程名称：" + th.getName());
+
                 socket = new Socket();
                 socketAddress = new InetSocketAddress(address, ports[port]);
                 try {
                     socket.connect(socketAddress, timeout);
                     socket.close();
-                    Result r = new Result(ip, port, "开放");
-                    return r;
+                    result = new Result(ip, ports[port], "开放");
+                    log.info("result"+result.toString());
                 } catch (IOException e) {
-                    Result r = new Result(ip, port, "关闭");
-                    return r;
+                    result = new Result(ip, ports[port], "关闭");
+                    log.info("result"+result.toString());
                 }
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-
-
-
-        return null;
+        return result;
     }
 }
