@@ -3,6 +3,8 @@ server:
   servlet:
     context-path: /port
 spring:
+  resources:
+    add-mappings: true
   profiles:
     active: test
 logging:

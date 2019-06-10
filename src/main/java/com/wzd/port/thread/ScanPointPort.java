@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -12,7 +14,7 @@ import java.util.concurrent.Callable;
  * 扫描指定端口
  */
 @Slf4j
-public class ScanPointPort implements Callable<Result> {
+public class ScanPointPort implements Callable<List<Result>> {
 
     private String ip; // 目标IP
     private Set<Integer> portSet; // 待扫描的端口的Set集合
@@ -29,9 +31,9 @@ public class ScanPointPort implements Callable<Result> {
 
 
     @Override
-    public Result call() throws Exception {
+    public List<Result> call() throws Exception {
         int port = 0;
-        Result result = null;
+        List<Result> resultList = new ArrayList<>();
         Integer[] ports = portSet.toArray(new Integer[portSet.size()]); // Set转数组
         try {
             InetAddress address = InetAddress.getByName(ip);
@@ -48,16 +50,18 @@ public class ScanPointPort implements Callable<Result> {
                 try {
                     socket.connect(socketAddress, timeout);
                     socket.close();
-                    result = new Result(ip, ports[port], "开放");
+                    Result result = new Result(ip, ports[port], "开放");
+                    resultList.add(result);
                     log.info("result"+result.toString());
                 } catch (IOException e) {
-                    result = new Result(ip, ports[port], "关闭");
+                    Result result = new Result(ip, ports[port], "关闭");
                     log.info("result"+result.toString());
+                    resultList.add(result);
                 }
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        return result;
+        return resultList;
     }
 }

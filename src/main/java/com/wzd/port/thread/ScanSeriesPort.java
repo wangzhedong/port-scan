@@ -5,13 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
  * 扫描连续端口
  */
 @Slf4j
-public class ScanSeriesPort implements Callable<Result> {
+public class ScanSeriesPort implements Callable<List<Result>> {
     // 目标IP
     private String ip;
 
@@ -29,8 +31,9 @@ public class ScanSeriesPort implements Callable<Result> {
     }
 
     @Override
-    public Result call() throws Exception {
+    public List<Result> call() throws Exception {
         int port = 0;
+        List<Result> resultList = new ArrayList<>();
         try {
             InetAddress address = InetAddress.getByName(ip);
             Socket socket;
@@ -45,15 +48,15 @@ public class ScanSeriesPort implements Callable<Result> {
                     socket.connect(socketAddress, timeout); // 超时时间
                     socket.close();
                     Result r = new Result(ip, port, "开放");
-                    return r;
+                    resultList.add(r);
                 } catch (IOException e) {
                     Result r = new Result(ip, port, "关闭");
-                    return r;
+                    resultList.add(r);
                 }
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        return null;
+        return resultList;
     }
 }

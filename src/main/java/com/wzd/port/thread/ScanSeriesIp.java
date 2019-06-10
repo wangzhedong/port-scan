@@ -1,10 +1,12 @@
 package com.wzd.port.thread;
 
 import com.wzd.port.constant.TypeEnum;
-import com.wzd.port.model.ResponseVO;
+import com.wzd.port.model.Result;
 import com.wzd.port.scan.PortScan;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -12,7 +14,7 @@ import java.util.concurrent.Callable;
  * 扫描连续ip
  */
 @Slf4j
-public class ScanSeriesIp implements Callable<ResponseVO> {
+public class ScanSeriesIp implements Callable<List<Result>> {
 
     /**
      * ip前缀：192.169.1.
@@ -62,21 +64,27 @@ public class ScanSeriesIp implements Callable<ResponseVO> {
     }
 
     @Override
-    public ResponseVO call() throws Exception {
+    public List<Result> call() throws Exception {
         int ip = 0;
-        ResponseVO vo = null;
+        List<Result> list = new ArrayList<>();
         for (ip = startEndIpNum[0] + currentThreadNum; ip <= startEndIpNum[1]; ip += threadNumber) {
             String ipAddr = this.startIpPreixAddr+ip;
             //如果是端口段，就端口段扫描，否则扫描指定端口
             PortScan portScan = new PortScan();
             if(type.equals(TypeEnum.SERIES.getType())){
-                vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0], startEndPort[1], this.timeout);
-                log.info("获取结果："+vo.toString());
+                List<Result> r = portScan.scanSeriesPorts(ipAddr, startEndPort[0], startEndPort[1], this.timeout);
+                if(r != null){
+                    list.addAll(r);
+                    log.info("获取结果："+r.toString());
+                }
             }else{
-                vo = portScan.scanPointPorts(ipAddr,this.portSet,this.timeout);
-                log.info("获取结果："+vo.toString());
+                List<Result> r = portScan.scanPointPorts(ipAddr,this.portSet,this.timeout);
+                if(r != null){
+                    list.addAll(r);
+                    log.info("获取结果："+r.toString());
+                }
             }
         }
-        return vo;
+        return list;
     }
 }

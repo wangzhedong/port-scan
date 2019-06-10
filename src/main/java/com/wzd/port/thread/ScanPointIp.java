@@ -1,11 +1,12 @@
 package com.wzd.port.thread;
 
 import com.wzd.port.constant.TypeEnum;
-import com.wzd.port.model.ResponseVO;
 import com.wzd.port.model.Result;
 import com.wzd.port.scan.PortScan;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.Callable;
  * 扫描指定ip
  */
 @Slf4j
-public class ScanPointIp implements Callable<ResponseVO> {
+public class ScanPointIp implements Callable<List<Result>> {
 
 
     /**
@@ -57,21 +58,27 @@ public class ScanPointIp implements Callable<ResponseVO> {
     }
 
     @Override
-    public ResponseVO call() throws Exception {
+    public List<Result> call() throws Exception {
         int ip = 0;
-        ResponseVO vo = null;
+        List<Result> list = new ArrayList<>();
         String[] ips = ipSet.toArray(new String[ipSet.size()]); // Set转数组
         for (ip = 0 + currentThreadNum; ip <= ips.length - 1; ip += threadNumber) {
             String ipAddr = ips[ip];
             PortScan portScan = new PortScan();
             if(type.equals(TypeEnum.POINT.getType())){
-                vo = portScan.scanSeriesPorts(ipAddr, startEndPort[0],  startEndPort[1], timeout);
-                log.info("获取结果："+vo.toString());
+                List<Result> r = portScan.scanSeriesPorts(ipAddr, startEndPort[0],  startEndPort[1], timeout);
+                if(r != null){
+                    list.addAll(r);
+                    log.info("获取结果："+r.toString());
+                }
             }else{
-                vo = portScan.scanPointPorts(ipAddr,portSet,timeout);
-                log.info("获取结果："+vo.toString());
+                List<Result> r = portScan.scanPointPorts(ipAddr,portSet,timeout);
+                if(r != null){
+                    list.addAll(r);
+                    log.info("获取结果："+r.toString());
+                }
             }
         }
-        return vo;
+        return list;
     }
 }

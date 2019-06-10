@@ -11,12 +11,13 @@
     <groupId>com.wzd</groupId>
     <artifactId>port-scan</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>port-scan</name>
     <description>端口扫描</description>
 
     <properties>
         <java.version>1.8</java.version>
+        <skipTests>true</skipTests>
     </properties>
 
     <dependencies>
